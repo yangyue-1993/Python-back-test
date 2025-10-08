@@ -40,10 +40,8 @@
 
  	let addr: SocketAddr = "127.0.0.1:5000".parse().unwrap();
  	tracing::info!("listening on {}", addr);
- 	axum::serve(
- 		std::net::TcpListener::bind(addr).unwrap(),
- 		app,
- 	)
+	let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+ 	axum::serve(listener, app)
  	.await
  	.unwrap();
  }
@@ -77,14 +75,11 @@
  	};
 
  	let body = axum::body::Body::from_stream(s);
- 	let mut headers = HeaderMap::new();
- 	headers.insert(axum::http::header::CONTENT_TYPE, HeaderValue::from_static("application/x-ndjson"));
- 	headers.insert(axum::http::header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
- 	headers.insert(axum::http::header::CONNECTION, HeaderValue::from_static("keep-alive"));
-
  	Response::builder()
  		.status(200)
- 		.headers(headers)
+ 		.header(axum::http::header::CONTENT_TYPE, HeaderValue::from_static("application/x-ndjson"))
+ 		.header(axum::http::header::CACHE_CONTROL, HeaderValue::from_static("no-cache"))
+ 		.header(axum::http::header::CONNECTION, HeaderValue::from_static("keep-alive"))
  		.body(body)
  		.unwrap()
  }
