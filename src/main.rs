@@ -1,10 +1,8 @@
- use axum::{
- 	routing::post,
- 	Json, Router,
- };
- use axum::http::{HeaderMap, HeaderValue};
- use axum::response::IntoResponse;
- use axum::response::Response;
+use axum::{
+	routing::post,
+	Json, Router,
+};
+use axum::response::Response;
  use serde::{Deserialize, Serialize};
  use std::net::SocketAddr;
  use tokio::time::{sleep, Duration};
@@ -40,12 +38,13 @@
 
  	let addr: SocketAddr = "127.0.0.1:5000".parse().unwrap();
  	tracing::info!("listening on {}", addr);
- 	axum::serve(
- 		std::net::TcpListener::bind(addr).unwrap(),
- 		app,
- 	)
- 	.await
- 	.unwrap();
+	let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+	axum::serve(
+		listener,
+		app,
+	)
+	.await
+	.unwrap();
  }
 
  async fn chat_with_agent(Json(_request): Json<ChatRequest>) -> Response {
@@ -76,15 +75,13 @@
  		yield Ok::<_, std::io::Error>(format!("{{\"type\":\"text-end\",\"id\":\"agent-response\"}}\n"));
  	};
 
- 	let body = axum::body::Body::from_stream(s);
- 	let mut headers = HeaderMap::new();
- 	headers.insert(axum::http::header::CONTENT_TYPE, HeaderValue::from_static("application/x-ndjson"));
- 	headers.insert(axum::http::header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
- 	headers.insert(axum::http::header::CONNECTION, HeaderValue::from_static("keep-alive"));
+	let body = axum::body::Body::from_stream(s);
 
- 	Response::builder()
- 		.status(200)
- 		.headers(headers)
- 		.body(body)
- 		.unwrap()
+	Response::builder()
+		.status(200)
+		.header(axum::http::header::CONTENT_TYPE, "application/x-ndjson")
+		.header(axum::http::header::CACHE_CONTROL, "no-cache")
+		.header(axum::http::header::CONNECTION, "keep-alive")
+		.body(body)
+		.unwrap()
  }
