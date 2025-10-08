@@ -36,9 +36,15 @@ use axum::response::Response;
 
  	let app = Router::new().route("/api/agent/chat", post(chat_with_agent));
 
- 	let addr: SocketAddr = "127.0.0.1:5000".parse().unwrap();
- 	tracing::info!("listening on {}", addr);
-	let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
+	let addr: SocketAddr = "127.0.0.1:8080".parse().unwrap();
+	tracing::info!("listening on {}", addr);
+	let listener = tokio::net::TcpListener::bind(addr)
+		.await
+		.unwrap_or_else(|e| {
+			eprintln!("Failed to bind to {}: {}", addr, e);
+			eprintln!("Please check if the port is already in use or try a different port.");
+			std::process::exit(1);
+		});
 	axum::serve(
 		listener,
 		app,
